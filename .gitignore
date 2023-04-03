@@ -1,0 +1,15 @@
+# editor
+.vscode
+
+# python
+__pycache__
+report.log
+
+# virtualenv
+.venv
+
+# datasets:
+datasets/*
+!datasets/download_and_preprocess_datasets.py
+!datasets/*-preprocessed.csv
+
