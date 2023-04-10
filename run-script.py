@@ -171,19 +171,14 @@ if __name__ == '__main__':
     #endregion
 
     hyper_parameters_space = []
-    c_set = [0.5, 1.0, 1.5, 2, 2.5]
+    c_set = [1.0, 1.5, 2, 2.5, 3]
+    w_set = [0.5, 0.75, 0.995]
     for c1 in c_set: 
         for c2 in c_set:
             if abs(c1 - c2) > 0.5:
                 continue
-            step = 0.1
-            min_w = 0.5
-            max_w = 0.995
-            if min_w <= max_w:
-                w = min_w
-                while (w < max_w):
-                    hyper_parameters_space.append({"c1": c1, "c2": c2, "w": w})
-                    w += step
+            for w in w_set:
+                hyper_parameters_space.append({"c1": c1, "c2": c2, "w": w})
     if config["debug"]:
         print("DEBUG:", len(hyper_parameters_space))
         print("DEBUG:", hyper_parameters_space)
