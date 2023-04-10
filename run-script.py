@@ -174,7 +174,7 @@ if __name__ == '__main__':
     c_set = [0.5, 1.0, 1.5, 2, 2.5]
     for c1 in c_set: 
         for c2 in c_set:
-            if abs(c1 - c2) > 1:
+            if abs(c1 - c2) > 0.5:
                 continue
             step = 0.1
             min_w = 0.5
