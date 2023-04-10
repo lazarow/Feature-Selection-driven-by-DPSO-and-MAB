@@ -28,6 +28,8 @@ config = vars(args)
 config["k_for_cross_validation"] = 5
 config["alpha"] = 0.88
 config["nof_repetitions"] = 10
+
+np.random.seed(config["seed"])
 #endregion
 
 #region Loading the dataset.
@@ -49,14 +51,14 @@ for i in range(nof_processes):
     classifiers.append(tree.DecisionTreeClassifier(
         criterion="gini",
         splitter="best",
-        random_state=config["seed"] + i
+        random_state=config["seed"] + 100 + i
     ))
 #endregion
 
 #region The accuracy function.
 def get_accuracy_for_selected_features(selected_features, process_index = 0):
     # k-fold Cross-Validation.
-    kf = KFold(n_splits=config["k_for_cross_validation"], random_state=config["seed"] + process_index, shuffle=True)
+    kf = KFold(n_splits=config["k_for_cross_validation"], random_state=config["seed"] + 200 + process_index, shuffle=True)
     selected_features_list = [] # Slicing data based on the feature selection.
     for idx, x in np.ndenumerate(selected_features):
         if x == 1:
