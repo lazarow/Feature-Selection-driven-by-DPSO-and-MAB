@@ -32,10 +32,11 @@ sys.stdout.flush()
 
 target = "disease"
 features = [
-    "date", "plant-stand", "precip", "temp", "hail", "crop-hist", "area-damaged", "severity", "seed-tmt", "germination", "plant-growth",
-    "leaves", "leafspots-halo", "leafspots-marg", "leafspot-size", "leaf-shread", "leaf-malf", "leaf-mild", "stem", "lodging", "stem-cankers",
-    "canker-lesion", "fruiting-bodies", "external decay", "mycelium", "int-discolor", "sclerotia", "fruit-pods", "fruit spots", "seed",
-    "mold-growth", "seed-discolor", "seed-size", "shriveling", "roots"
+    "date", "plant-stand", "precip", "temp", "hail", "crop-hist", "area-damaged", "severity", "seed-tmt", "germination",
+    "plant-growth", "leaves", "leafspots-halo", "leafspots-marg", "leafspot-size", "leaf-shread", "leaf-malf",
+    "leaf-mild", "stem", "lodging", "stem-cankers", "canker-lesion", "fruiting-bodies", "external decay", "mycelium",
+    "int-discolor", "sclerotia", "fruit-pods", "fruit spots", "seed", "mold-growth", "seed-discolor", "seed-size",
+    "shriveling", "roots"
 ]
 ordinal_features = ["date", "temp"]
 nominal_features = []
@@ -119,7 +120,7 @@ for feature in nominal_features:
 imputer = SimpleImputer(missing_values=np.NaN, strategy='mean') 
 for feature in linear_features:
     dataset[feature] = dataset[feature].replace("?", np.NaN)
-    if dataset[feature].eq(np.NaN).any():
+    if dataset[feature].isnull().values.any():
         dataset[feature] = imputer.fit_transform(dataset[feature].values.reshape(-1,1))[:,0]
 print(".", end="")
 sys.stdout.flush()
@@ -149,7 +150,6 @@ print(" has been preprocessed and saved.")
 number_of_features_after = len(dataset.columns) - 1
 number_of_classes = len(dataset[target].unique())
 number_of_instances = dataset.shape[0]
-print(" has been preprocessed and saved.")
 print("Number of features (before preprocessing):", number_of_features_before)
 print("Number of features (after preprocessing):", number_of_features_after)
 print("Number of classes:", number_of_classes)
@@ -190,7 +190,7 @@ for feature in (nominal_features + ordinal_features):
 imputer = SimpleImputer(missing_values=np.NaN, strategy='mean') 
 for feature in continuous_features:
     dataset[feature] = dataset[feature].replace("?", np.NaN)
-    if dataset[feature].eq(np.NaN).any():
+    if dataset[feature].isnull().values.any():
         dataset[feature] = imputer.fit_transform(dataset[feature].values.reshape(-1,1))[:,0]
 print(".", end="")
 sys.stdout.flush()
@@ -229,7 +229,6 @@ print(" has been preprocessed and saved.")
 number_of_features_after = len(dataset.columns) - 1
 number_of_classes = len(dataset[target].unique())
 number_of_instances = dataset.shape[0]
-print(" has been preprocessed and saved.")
 print("Number of features (before preprocessing):", number_of_features_before)
 print("Number of features (after preprocessing):", number_of_features_after)
 print("Number of classes:", number_of_classes)
@@ -293,7 +292,6 @@ print(" has been preprocessed and saved.")
 number_of_features_after = len(dataset.columns) - 1
 number_of_classes = len(dataset[target].unique())
 number_of_instances = dataset.shape[0]
-print(" has been preprocessed and saved.")
 print("Number of features (before preprocessing):", number_of_features_before)
 print("Number of features (after preprocessing):", number_of_features_after)
 print("Number of classes:", number_of_classes)

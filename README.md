@@ -1,6 +1,8 @@
 # MAB-optimized discrete PSO-based feature selection for enhanced classification performance
 
-This repository contains the source code used in research on viewing the optimization of discrete PSO hyper-parameters as the adversarial multi-armed bandit problem. To verify the hypothesis, the possibility of using the solution in a practical feature selection problem for data classification was examined.
+This repository contains the source code used in research on viewing the optimization of discrete PSO hyper-parameters 
+as the adversarial multi-armed bandit problem. To verify the hypothesis, the possibility of using the solution in a 
+practical feature selection problem for data classification was examined.
 
 ## Setup
 
