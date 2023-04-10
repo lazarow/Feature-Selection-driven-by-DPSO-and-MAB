@@ -28,7 +28,8 @@ args = parser.parse_args()
 config = vars(args)
 config["k_for_cross_validation"] = 5
 config["alpha"] = 0.88
-config["nof_repetitions"] = 10
+config["nof_repetitions"] = 5
+config["nof_pso_iterations"] = 100
 
 random.seed(config["seed"])
 np.random.seed(config["seed"] + 10)
@@ -58,7 +59,11 @@ for i in range(nof_processes):
 #endregion
 
 #region The accuracy function.
+previous_accuracy_values = {}
 def get_accuracy_for_selected_features(selected_features, process_index = 0):
+    h = hash(str(selected_features))
+    if h in previous_accuracy_values:
+        return previous_accuracy_values[h]
     # k-fold Cross-Validation.
     kf = KFold(n_splits=config["k_for_cross_validation"], random_state=config["seed"] + 200 + process_index, shuffle=True)
     selected_features_list = [] # Slicing data based on the feature selection.
@@ -76,24 +81,19 @@ def get_accuracy_for_selected_features(selected_features, process_index = 0):
         acc = accuracy_score(y_pred, y_test)
         acc_scores.append(acc)
     avg_acc_score = sum(acc_scores) / config["k_for_cross_validation"] # Average of accuracy.
+    previous_accuracy_values[h] = avg_acc_score
     return avg_acc_score
 #endregion
 
 #region The fitness function.
 total_nof_features = X.shape[1]
-previous_fitness_values = {}
 def fitness_function(selected_features, process_index):
-    h = hash(str(selected_features))
-    if h in previous_fitness_values:
-        return previous_fitness_values[h]
     acc_score = get_accuracy_for_selected_features(selected_features, process_index)
     nof_selected_features = 0
     for x in selected_features:
         if x == 1:
             nof_selected_features += 1
-    fitness = config["alpha"] * (1.0 - acc_score) + (1.0 - config["alpha"]) * (1 - nof_selected_features / total_nof_features)
-    previous_fitness_values[h] = fitness
-    return fitness
+    return config["alpha"] * (1.0 - acc_score) + (1.0 - config["alpha"]) * (1 - nof_selected_features / total_nof_features)
 #endregion
 
 #region The objective function for a set of particles.
@@ -188,11 +188,11 @@ if __name__ == '__main__':
             for repetition in range(config["nof_repetitions"]):
                 start = time.time()
                 dpso = DPSO(options={"c1": hyper_parameters["c1"], "c2": hyper_parameters["c2"], "w": hyper_parameters["w"]})
-                dpso.optimize(100)
+                dpso.optimize(config["nof_pso_iterations"])
                 _, selected_features = dpso.get_best()
                 acc_score = get_accuracy_for_selected_features(selected_features)
                 end = time.time()
-                print(dataset, "DPSO (Grid Search)", repetition + 1, hyper_parameters["c1"], hyper_parameters["c2"], hyper_parameters["w"], acc_score, end-start, str(selected_features), sep=";")
+                print(dataset, "DPSO (Grid Search)", repetition + 1, hyper_parameters["c1"], hyper_parameters["c2"], hyper_parameters["w"], acc_score, end-start, ','.join(map(str, selected_features)), sep=";")
                 sys.stdout.flush()
 
     #region Multi-processing support.
