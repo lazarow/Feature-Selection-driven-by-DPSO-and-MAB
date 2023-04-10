@@ -173,11 +173,9 @@ if __name__ == '__main__':
             if abs(c1 - c2) > 1:
                 continue
             step = 0.1
-            min_w = 0.5 * (c1 + c2) - 1
-            if min_w < 0.5:
-                min_w = 0.5
+            min_w = 0.5
             max_w = 0.995
-            if min_w <= min_w and min_w >= step:
+            if min_w <= max_w:
                 w = min_w
                 while (w < max_w):
                     hyper_parameters_space.append({"c1": c1, "c2": c2, "w": w})
