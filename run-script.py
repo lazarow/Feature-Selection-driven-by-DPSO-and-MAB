@@ -13,6 +13,7 @@ from pyswarms.backend.operators import compute_pbest
 from pyswarms.backend.topology import Star
 from pyswarms.backend.handlers import VelocityHandler
 from pyswarms.base import DiscreteSwarmOptimizer
+import random
 #endregion
 
 #region Parsing the arguments and configuration.
@@ -29,7 +30,8 @@ config["k_for_cross_validation"] = 5
 config["alpha"] = 0.88
 config["nof_repetitions"] = 10
 
-np.random.seed(config["seed"])
+random.seed(config["seed"])
+np.random.seed(config["seed"] + 10)
 #endregion
 
 #region Loading the dataset.
