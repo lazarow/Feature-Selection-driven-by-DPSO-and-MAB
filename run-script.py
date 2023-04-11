@@ -246,7 +246,7 @@ if __name__ == '__main__':
             _, selected_features = dpso.get_best()
             acc_score = get_accuracy_for_selected_features(selected_features)
             end = time.time()
-            print("DPSO (MAB)", repetition+1, config["nof_mab_iterations"], "", "", acc_score, end-start, ','.join(map(str, selected_features)), sep=";")
+            print(dataset, "DPSO (MAB)", repetition+1, config["nof_mab_iterations"], "", "", acc_score, end-start, ','.join(map(str, selected_features)), sep=";")
             sys.stdout.flush()
     #endregion
 
