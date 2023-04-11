@@ -14,6 +14,7 @@ from pyswarms.backend.topology import Star
 from pyswarms.backend.handlers import VelocityHandler
 from pyswarms.base import DiscreteSwarmOptimizer
 import random
+import math
 #endregion
 
 #region Parsing the arguments and configuration.
@@ -22,6 +23,8 @@ parser.add_argument("dataset_filepath")
 parser.add_argument("--seed", default=2565761)
 parser.add_argument("--debug", action="store_true")
 parser.add_argument("--grid_search", action="store_true")
+parser.add_argument("--mab", action="store_true")
+parser.add_argument("--nof_mab_iterations", default=300)
 parser.add_argument("--print_header", action="store_true")
 parser.add_argument("--no_fs", action="store_true")
 args = parser.parse_args()
@@ -116,6 +119,9 @@ class DPSO(DiscreteSwarmOptimizer):
         self.vh.memory = self.swarm.position
         self.swarm.pbest_cost = np.full(self.swarm_size[0], np.inf)
         self.name = __name__
+        self.cost_sums = np.full(self.swarm_size[0], 0)
+        self.best_cost_found = np.inf
+        self.best_position_found = np.full(self.swarm_size[0], 1)
     
     def optimize(self, iters):
         for i in range(iters):
@@ -127,8 +133,12 @@ class DPSO(DiscreteSwarmOptimizer):
     def iterate(self):
         self.swarm.current_cost = objective_function(self.swarm.position)
         self.swarm.pbest_pos, self.swarm.pbest_cost = compute_pbest(self.swarm)
-        old_best_cost = self.swarm.best_cost
+        self.cost_sums = np.add(self.cost_sums, self.swarm.pbest_cost)
         self.swarm.best_pos, self.swarm.best_cost = self.top.compute_gbest(self.swarm)
+        best_cost_found = np.min(self.swarm.best_cost)
+        if best_cost_found < self.best_cost_found:
+            self.best_cost_found = best_cost_found
+            self.best_position_found = self.swarm.best_pos.copy()
         self.swarm.velocity = self.top.compute_velocity(self.swarm, self.velocity_clamp, self.vh)
         self.swarm.position = self._compute_position(self.swarm)
 
@@ -194,6 +204,51 @@ if __name__ == '__main__':
                 end = time.time()
                 print(dataset, "DPSO (Grid Search)", repetition + 1, hyper_parameters["c1"], hyper_parameters["c2"], hyper_parameters["w"], acc_score, end-start, ','.join(map(str, selected_features)), sep=";")
                 sys.stdout.flush()
+
+    #region MAB.
+    def distr(weights, gamma=0.0):
+        weight_sum = float(sum(weights))
+        return tuple((1.0 - gamma) * (w / weight_sum) + (gamma / len(weights)) for w in weights)
+    def draw(weights):
+        choice = random.uniform(0, sum(weights))
+        choiceIndex = 0
+        for weight in weights:
+            choice -= weight
+            if choice <= 0:
+                return choiceIndex
+            choiceIndex += 1
+    if config["mab"]:
+        for repetition in range(config["nof_repetitions"]):
+            start = time.time()
+            dpso = DPSO(options={})
+            gamma = np.sqrt(np.log(len(hyper_parameters_space)) / len(hyper_parameters_space))
+            weights = [1 / len(hyper_parameters_space)] * len(hyper_parameters_space)
+            visits = [0] * len(hyper_parameters_space)
+            costs_history = []
+            for i in range(int(config["nof_mab_iterations"])):
+                probabilityDistribution = distr(weights, gamma)
+                choice = draw(probabilityDistribution)
+                visits[choice] += 1
+                dpso.swarm.options["c1"] = hyper_parameters_space[choice]["c1"]
+                dpso.swarm.options["c2"] = hyper_parameters_space[choice]["c2"]
+                dpso.swarm.options["w"] = hyper_parameters_space[choice]["w"]
+                dpso.iterate()
+                cost, selected_features = dpso.get_best()
+                if len(costs_history) >= 1:
+                    theReward = 1 if cost < costs_history[0] else 0
+                else:
+                    theReward = 0
+                estimatedReward = 1.0 * theReward / probabilityDistribution[choice]
+                weights[choice] *= math.exp(estimatedReward * gamma / len(hyper_parameters_space))
+                if config["debug"] and i % 20 == 0:
+                    print("DEBUG: Iteration: {} |".format(i+1), weights, "|", visits)
+                costs_history.insert(0, cost)
+            _, selected_features = dpso.get_best()
+            acc_score = get_accuracy_for_selected_features(selected_features)
+            end = time.time()
+            print("DPSO (MAB)", repetition+1, config["nof_mab_iterations"], "", "", acc_score, end-start, ','.join(map(str, selected_features)), sep=";")
+            sys.stdout.flush()
+    #endregion
 
     #region Multi-processing support.
     pool.close()
