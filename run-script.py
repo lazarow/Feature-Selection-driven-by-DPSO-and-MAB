@@ -31,11 +31,8 @@ args = parser.parse_args()
 config = vars(args)
 config["k_for_cross_validation"] = 5
 config["alpha"] = 0.88
-config["nof_repetitions"] = 5
+config["nof_repetitions"] = 10
 config["nof_pso_iterations"] = 100
-
-random.seed(config["seed"])
-np.random.seed(config["seed"] + 10)
 #endregion
 
 #region Loading the dataset.
@@ -222,7 +219,7 @@ if __name__ == '__main__':
             start = time.time()
             dpso = DPSO(options={})
             gamma = np.sqrt(np.log(len(hyper_parameters_space)) / len(hyper_parameters_space))
-            weights = [1 / len(hyper_parameters_space)] * len(hyper_parameters_space)
+            weights = [1] * len(hyper_parameters_space)
             visits = [0] * len(hyper_parameters_space)
             costs_history = []
             for i in range(int(config["nof_mab_iterations"])):
