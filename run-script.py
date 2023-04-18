@@ -40,7 +40,7 @@ config["w_max"] = 0.995
 config["epsilon"] = 0.25
 config["nof_iterations_before_reward"] = 10
 # For experiments:
-config["nof_repetitions"] = 10
+config["nof_repetitions"] = 1
 #endregion
 
 #region Loading the dataset.
@@ -154,7 +154,7 @@ class DPSO(DiscreteSwarmOptimizer):
     def _sigmoid(self, x):
         return 1 / (1 + np.exp(-x))
 
-    def save_reward_point():
+    def save_reward_point(self):
         self.reward_point = {
             "position": np.copy(self.swarm.position),
             "velocity": np.copy(self.swarm.velocity),
@@ -165,7 +165,7 @@ class DPSO(DiscreteSwarmOptimizer):
             "time_step": self.time_step
         }
 
-    def restore_reward_point():
+    def restore_reward_point(self):
         self.swarm.position = self.reward_point["position"]
         self.swarm.velocity = self.reward_point["velocity"]
         self.swarm.pbest_pos = self.reward_point["pbest_pos"]
@@ -186,7 +186,7 @@ if __name__ == '__main__':
     #region The output header.
     dataset = os.path.basename(config["dataset_filepath"]).split('.')[0]
     if config["print_header"]:
-        print("Dataset","Name", "Test Index", "P.1", "P.2", "P.3", "Cost", "Accuracy", "Nof.Feature", "Time", "Feature.Selection", sep=";")
+        print("Dataset","Name", "Test Index", "P.1", "P.2", "P.3", "Cost", "Accuracy", "Nof.Feature", "Time", "Feature.Selection", "MAB.rewards", "MAB.visits", sep=";")
         sys.stdout.flush()
     #endregion
 
@@ -196,7 +196,7 @@ if __name__ == '__main__':
         selected_features = np.ones((X.shape[1],), dtype=int)
         acc_score = get_accuracy_for_selected_features(selected_features)
         end = time.time()
-        print(dataset, "No feature selection", 1, "", "", "", (config["alpha"] * (1.0 - acc_score) + (1 - config["alpha"])), acc_score, len(selected_features), end-start, "", sep=";")
+        print(dataset, "No feature selection", 1, "", "", "", (config["alpha"] * (1.0 - acc_score) + (1 - config["alpha"])), acc_score, len(selected_features), end-start, "", "", "", sep=";")
         sys.stdout.flush()
     #endregion
 
@@ -205,7 +205,7 @@ if __name__ == '__main__':
     c_set = [0.5, 1.0, 1.5, 2, 2.5]
     for c1 in c_set: 
         for c2 in c_set:
-            hyper_parameters_space.append({"c1": c1, "c2": c2, "w": 0.6})
+            hyper_parameters_space.append({"c1": c1, "c2": c2})
     if config["debug"]:
         print("DEBUG:", len(hyper_parameters_space))
         print("DEBUG:", hyper_parameters_space)
@@ -222,7 +222,7 @@ if __name__ == '__main__':
                 cost, selected_features = dpso.get_best()
                 acc_score = get_accuracy_for_selected_features(selected_features)
                 end = time.time()
-                print(dataset, "DPSO (Grid Search)", repetition + 1, hyper_parameters["c1"], hyper_parameters["c2"], "", cost, acc_score, np.count_nonzero(selected_features == 1), end-start, ','.join(map(str, selected_features)), sep=";")
+                print(dataset, "DPSO (Grid Search)", repetition + 1, hyper_parameters["c1"], hyper_parameters["c2"], "", cost, acc_score, np.count_nonzero(selected_features == 1), end-start, ','.join(map(str, selected_features)), "", "", sep=";")
                 sys.stdout.flush()
     #endregion
 
@@ -236,6 +236,9 @@ if __name__ == '__main__':
             best_selected_features = None
             real_total_time_steps = len(hyper_parameters_space) * config["nof_pso_iterations"]
             total_time_steps = real_total_time_steps
+            dpso.total_time_steps = total_time_steps
+            rewards = [0] * len(hyper_parameters_space)
+            visits = [0] * len(hyper_parameters_space)
             i = 0
             while i < real_total_time_steps:
                 if random.random() < config["epsilon"]:
@@ -264,13 +267,35 @@ if __name__ == '__main__':
                     best_cost = cost
                     best_selected_features = selected_features
                     reward = 1
+                    dpso.save_reward_point()
+                else:
+                    total_time_steps -= config["nof_iterations_before_reward"]
+                    dpso.total_time_steps = total_time_steps
+                    dpso.restore_reward_point()
                 rewards[choice] += reward
                 visits[choice] += 1
-                if config["debug"] and i % 20 == 0:
-                    print("DEBUG: MAB iteration: {} |".format(i+1), rewards, visits)
+                if config["debug"]:
+                    print("DEBUG: MAB iteration: {}".format(i+1), "Improvement" if reward == 1 else "Stagnation", rewards, visits, total_time_steps, sep=" | ")
+
+                iter25 = round((real_total_time_steps * 0.25) / config["nof_iterations_before_reward"]) * config["nof_iterations_before_reward"]
+                if i == iter25:
+                    end = time.time()
+                    acc_score = get_accuracy_for_selected_features(best_selected_features)
+                    print(dataset, "DPSO (MAB)", repetition+1, i, "25%", "", best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), sep=";")  
+                iter50 = round((real_total_time_steps * 0.50) / config["nof_iterations_before_reward"]) * config["nof_iterations_before_reward"]
+                if i == iter50:
+                    end = time.time()
+                    acc_score = get_accuracy_for_selected_features(best_selected_features)
+                    print(dataset, "DPSO (MAB)", repetition+1, i, "50%", "", best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), sep=";")        
+                iter75 = round((real_total_time_steps * 0.75) / config["nof_iterations_before_reward"]) * config["nof_iterations_before_reward"]
+                if i == iter75:
+                    end = time.time()
+                    acc_score = get_accuracy_for_selected_features(best_selected_features)
+                    print(dataset, "DPSO (MAB)", repetition+1, i, "75%", "", best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), sep=";")        
+
             acc_score = get_accuracy_for_selected_features(best_selected_features)
             end = time.time()
-            print(dataset, "DPSO (MAB)", repetition+1, "", "", "", best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), sep=";")
+            print(dataset, "DPSO (MAB)", repetition+1, i, "100%", "", best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), ','.join(map(str, rewards)), ','.join(map(str, visits)), sep=";")
             sys.stdout.flush()
     #endregion
 
