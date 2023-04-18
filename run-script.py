@@ -225,7 +225,7 @@ if __name__ == '__main__':
                 cost, selected_features = dpso.get_best()
                 acc_score = get_accuracy_for_selected_features(selected_features)
                 end = time.time()
-                print(dataset, "DPSO (Grid Search)", repetition + 1, hyper_parameters["c1"], hyper_parameters["c2"], "", cost, acc_score, len(selected_features), end-start, ','.join(map(str, selected_features)), sep=";")
+                print(dataset, "DPSO (Grid Search)", repetition + 1, hyper_parameters["c1"], hyper_parameters["c2"], "", cost, acc_score, np.count_nonzero(selected_features == 1), end-start, ','.join(map(str, selected_features)), sep=";")
                 sys.stdout.flush()
     #endregion
 
@@ -273,7 +273,7 @@ if __name__ == '__main__':
                     print("DEBUG: MAB iteration: {} |".format(i+1), rewards, visits)
             acc_score = get_accuracy_for_selected_features(best_selected_features)
             end = time.time()
-            print(dataset, "DPSO (MAB)", repetition+1, "", "", "", best_cost, acc_score, len(best_selected_features), end-start, ','.join(map(str, selected_features)), sep=";")
+            print(dataset, "DPSO (MAB)", repetition+1, "", "", "", best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), sep=";")
             sys.stdout.flush()
     #endregion
 
