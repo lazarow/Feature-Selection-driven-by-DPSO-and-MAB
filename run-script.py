@@ -40,7 +40,7 @@ config["w_max"] = 0.995
 config["epsilon"] = 0.75
 config["gamma"] = 0.99
 # For experiments:
-config["nof_repetitions"] = 1
+config["nof_repetitions"] = 10
 #endregion
 
 #region Loading the dataset.
