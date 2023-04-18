@@ -166,12 +166,12 @@ class DPSO(DiscreteSwarmOptimizer):
         }
 
     def restore_reward_point(self):
-        self.swarm.position = self.reward_point["position"]
-        self.swarm.velocity = self.reward_point["velocity"]
-        self.swarm.pbest_pos = self.reward_point["pbest_pos"]
-        self.swarm.best_pos = self.reward_point["best_pos"]
-        self.swarm.pbest_cost = self.reward_point["pbest_cost"]
-        self.swarm.best_cost = self.reward_point["best_cost"]
+        self.swarm.position = np.copy(self.reward_point["position"])
+        self.swarm.velocity = np.copy(self.reward_point["velocity"])
+        self.swarm.pbest_pos = np.copy(self.reward_point["pbest_pos"])
+        self.swarm.best_pos = np.copy(self.reward_point["best_pos"])
+        self.swarm.pbest_cost = np.copy(self.reward_point["pbest_cost"])
+        self.swarm.best_cost = np.copy(self.reward_point["best_cost"])
         self.time_step = self.reward_point["time_step"]
 
 #endregion
@@ -282,16 +282,19 @@ if __name__ == '__main__':
                     end = time.time()
                     acc_score = get_accuracy_for_selected_features(best_selected_features)
                     print(dataset, "DPSO (MAB)", repetition+1, time_step, "25%", "", best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), sep=";")  
+                    sys.stdout.flush()
                 iter50 = round((real_total_time_steps * 0.50) / config["nof_iterations_before_reward"]) * config["nof_iterations_before_reward"]
                 if time_step == iter50:
                     end = time.time()
                     acc_score = get_accuracy_for_selected_features(best_selected_features)
                     print(dataset, "DPSO (MAB)", repetition+1, time_step, "50%", "", best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), sep=";")        
+                    sys.stdout.flush()
                 iter75 = round((real_total_time_steps * 0.75) / config["nof_iterations_before_reward"]) * config["nof_iterations_before_reward"]
                 if time_step == iter75:
                     end = time.time()
                     acc_score = get_accuracy_for_selected_features(best_selected_features)
                     print(dataset, "DPSO (MAB)", repetition+1, time_step, "75%", "", best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), sep=";")        
+                    sys.stdout.flush()
 
             acc_score = get_accuracy_for_selected_features(best_selected_features)
             end = time.time()
