@@ -40,7 +40,7 @@ config["w_max"] = 0.995
 config["epsilon"] = 0.25
 config["nof_iterations_before_reward"] = 10
 # For experiments:
-config["nof_repetitions"] = 1
+config["nof_repetitions"] = 10
 #endregion
 
 #region Loading the dataset.
@@ -239,8 +239,8 @@ if __name__ == '__main__':
             dpso.total_time_steps = total_time_steps
             rewards = [0] * len(hyper_parameters_space)
             visits = [0] * len(hyper_parameters_space)
-            i = 0
-            while i < real_total_time_steps:
+            time_step = 0
+            while time_step < real_total_time_steps:
                 if random.random() < config["epsilon"]:
                     choice = random.choice(range(len(hyper_parameters_space)))
                 else:
@@ -260,7 +260,7 @@ if __name__ == '__main__':
                 dpso.swarm.options["c2"] = hyper_parameters_space[choice]["c2"]
                 for j in range(config["nof_iterations_before_reward"]):
                     dpso.iterate()
-                    i += 1
+                    time_step += 1
                 cost, selected_features = dpso.get_best()
                 reward = 0
                 if cost < best_cost:
@@ -275,27 +275,27 @@ if __name__ == '__main__':
                 rewards[choice] += reward
                 visits[choice] += 1
                 if config["debug"]:
-                    print("DEBUG: MAB iteration: {}".format(i+1), "Improvement" if reward == 1 else "Stagnation", rewards, visits, total_time_steps, sep=" | ")
+                    print("DEBUG: MAB iteration: {}".format(time_step+1), "Improvement" if reward == 1 else "Stagnation", rewards, visits, total_time_steps, sep=" | ")
 
                 iter25 = round((real_total_time_steps * 0.25) / config["nof_iterations_before_reward"]) * config["nof_iterations_before_reward"]
-                if i == iter25:
+                if time_step == iter25:
                     end = time.time()
                     acc_score = get_accuracy_for_selected_features(best_selected_features)
-                    print(dataset, "DPSO (MAB)", repetition+1, i, "25%", "", best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), sep=";")  
+                    print(dataset, "DPSO (MAB)", repetition+1, time_step, "25%", "", best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), sep=";")  
                 iter50 = round((real_total_time_steps * 0.50) / config["nof_iterations_before_reward"]) * config["nof_iterations_before_reward"]
-                if i == iter50:
+                if time_step == iter50:
                     end = time.time()
                     acc_score = get_accuracy_for_selected_features(best_selected_features)
-                    print(dataset, "DPSO (MAB)", repetition+1, i, "50%", "", best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), sep=";")        
+                    print(dataset, "DPSO (MAB)", repetition+1, time_step, "50%", "", best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), sep=";")        
                 iter75 = round((real_total_time_steps * 0.75) / config["nof_iterations_before_reward"]) * config["nof_iterations_before_reward"]
-                if i == iter75:
+                if time_step == iter75:
                     end = time.time()
                     acc_score = get_accuracy_for_selected_features(best_selected_features)
-                    print(dataset, "DPSO (MAB)", repetition+1, i, "75%", "", best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), sep=";")        
+                    print(dataset, "DPSO (MAB)", repetition+1, time_step, "75%", "", best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), sep=";")        
 
             acc_score = get_accuracy_for_selected_features(best_selected_features)
             end = time.time()
-            print(dataset, "DPSO (MAB)", repetition+1, i, "100%", "", best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), ','.join(map(str, rewards)), ','.join(map(str, visits)), sep=";")
+            print(dataset, "DPSO (MAB)", repetition+1, time_step, "100%", "", best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), ','.join(map(str, rewards)), ','.join(map(str, visits)), sep=";")
             sys.stdout.flush()
     #endregion
 
