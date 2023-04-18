@@ -281,19 +281,19 @@ if __name__ == '__main__':
                 if time_step == iter25:
                     end = time.time()
                     acc_score = get_accuracy_for_selected_features(best_selected_features)
-                    print(dataset, "DPSO (MAB)", repetition+1, time_step, "25%", "", best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), sep=";")  
+                    print(dataset, "DPSO (MAB)", repetition+1, time_step, "25%", "", best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), ','.join(map(str, rewards)), ','.join(map(str, visits)), sep=";")  
                     sys.stdout.flush()
                 iter50 = round((real_total_time_steps * 0.50) / config["nof_iterations_before_reward"]) * config["nof_iterations_before_reward"]
                 if time_step == iter50:
                     end = time.time()
                     acc_score = get_accuracy_for_selected_features(best_selected_features)
-                    print(dataset, "DPSO (MAB)", repetition+1, time_step, "50%", "", best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), sep=";")        
+                    print(dataset, "DPSO (MAB)", repetition+1, time_step, "50%", "", best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), ','.join(map(str, rewards)), ','.join(map(str, visits)), sep=";")        
                     sys.stdout.flush()
                 iter75 = round((real_total_time_steps * 0.75) / config["nof_iterations_before_reward"]) * config["nof_iterations_before_reward"]
                 if time_step == iter75:
                     end = time.time()
                     acc_score = get_accuracy_for_selected_features(best_selected_features)
-                    print(dataset, "DPSO (MAB)", repetition+1, time_step, "75%", "", best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), sep=";")        
+                    print(dataset, "DPSO (MAB)", repetition+1, time_step, "75%", "", best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), ','.join(map(str, rewards)), ','.join(map(str, visits)), sep=";")        
                     sys.stdout.flush()
 
             acc_score = get_accuracy_for_selected_features(best_selected_features)
