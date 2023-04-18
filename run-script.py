@@ -37,8 +37,8 @@ config["nof_pso_iterations"] = 100
 config["w_min"] = 0.5
 config["w_max"] = 0.995
 # For MAB
-config["epsilon"] = 0.75
-config["gamma"] = 0.99
+config["epsilon"] = 0.25
+config["nof_iterations_before_reward"] = 10
 # For experiments:
 config["nof_repetitions"] = 10
 #endregion
@@ -156,6 +156,27 @@ class DPSO(DiscreteSwarmOptimizer):
 
     def _sigmoid(self, x):
         return 1 / (1 + np.exp(-x))
+
+    def save_reward_point():
+        self.reward_point = {
+            "position": np.copy(self.swarm.position),
+            "velocity": np.copy(self.swarm.velocity),
+            "pbest_pos": np.copy(self.swarm.pbest_pos),
+            "best_pos": np.copy(self.swarm.best_pos),
+            "pbest_cost": np.copy(self.swarm.pbest_cost),
+            "best_cost": np.copy(self.swarm.best_cost),
+            "time_step": self.time_step
+        }
+
+    def restore_reward_point():
+        self.swarm.position = self.reward_point["position"]
+        self.swarm.velocity = self.reward_point["velocity"]
+        self.swarm.pbest_pos = self.reward_point["pbest_pos"]
+        self.swarm.best_pos = self.reward_point["best_pos"]
+        self.swarm.pbest_cost = self.reward_point["pbest_cost"]
+        self.swarm.best_cost = self.reward_point["best_cost"]
+        self.time_step = self.reward_point["time_step"]
+
 #endregion
 
 if __name__ == '__main__':
@@ -168,7 +189,7 @@ if __name__ == '__main__':
     #region The output header.
     dataset = os.path.basename(config["dataset_filepath"]).split('.')[0]
     if config["print_header"]:
-        print("Dataset","Name", "Test Index", "P.1", "P.2", "P.3", "Avg.Accuracy", "Time", "Feature.Selection", sep=";")
+        print("Dataset","Name", "Test Index", "P.1", "P.2", "P.3", "Cost", "Accuracy", "Nof.Feature", "Time", "Feature.Selection", sep=";")
         sys.stdout.flush()
     #endregion
 
@@ -178,7 +199,7 @@ if __name__ == '__main__':
         selected_features = np.ones((X.shape[1],), dtype=int)
         acc_score = get_accuracy_for_selected_features(selected_features)
         end = time.time()
-        print(dataset, "No feature selection", 1, "", "", "", acc_score, end-start, "", sep=";")
+        print(dataset, "No feature selection", 1, "", "", "", (config["alpha"] * (1.0 - acc_score)), acc_score, len(selected_features), end-start, "", sep=";")
         sys.stdout.flush()
     #endregion
 
@@ -201,10 +222,10 @@ if __name__ == '__main__':
                 dpso = DPSO(options={"c1": hyper_parameters["c1"], "c2": hyper_parameters["c2"]})
                 dpso.total_time_steps = config["nof_pso_iterations"]
                 dpso.optimize(config["nof_pso_iterations"])
-                _, selected_features = dpso.get_best()
+                cost, selected_features = dpso.get_best()
                 acc_score = get_accuracy_for_selected_features(selected_features)
                 end = time.time()
-                print(dataset, "DPSO (Grid Search)", repetition + 1, hyper_parameters["c1"], hyper_parameters["c2"], "", acc_score, end-start, ','.join(map(str, selected_features)), sep=";")
+                print(dataset, "DPSO (Grid Search)", repetition + 1, hyper_parameters["c1"], hyper_parameters["c2"], "", cost, acc_score, len(selected_features), end-start, ','.join(map(str, selected_features)), sep=";")
                 sys.stdout.flush()
     #endregion
 
@@ -212,13 +233,17 @@ if __name__ == '__main__':
     if config["mab"]:
         for repetition in range(int(config["nof_repetitions"])):
             start = time.time()
-            rewards = np.full(len(hyper_parameters_space), .0)
-            visits = np.full(len(hyper_parameters_space), .0)
+            dpso = DPSO(options={})
+            dpso.save_reward_point()
             best_cost = np.inf
             best_selected_features = None
-            dpso = DPSO(options={})
-            for i in range(int(config["nof_mab_iterations"])):
+            real_total_time_steps = len(hyper_parameters_space) * config["nof_pso_iterations"]
+            total_time_steps = real_total_time_steps
+            i = 0
+            while i < real_total_time_steps:
                 if random.random() < config["epsilon"]:
+                    choice = random.choice(range(len(hyper_parameters_space)))
+                else:
                     choice = None
                     best_value = -np.inf
                     arms = [*range(len(hyper_parameters_space))]
@@ -231,23 +256,24 @@ if __name__ == '__main__':
                         if value > best_value:
                             choice = i
                             best_value = value
-                else:
-                    choice = random.choice(range(len(hyper_parameters_space)))
                 dpso.swarm.options["c1"] = hyper_parameters_space[choice]["c1"]
                 dpso.swarm.options["c2"] = hyper_parameters_space[choice]["c2"]
-                dpso.swarm.options["w"] = hyper_parameters_space[choice]["w"]
-                dpso.iterate()
+                for j in range(config["nof_iterations_before_reward"]):
+                    dpso.iterate()
+                    i += 1
                 cost, selected_features = dpso.get_best()
+                reward = 0
                 if cost < best_cost:
                     best_cost = cost
                     best_selected_features = selected_features
-                rewards[choice] = rewards[choice] * config["gamma"] + dpso.pbest_diff_reward
+                    reward = 1
+                rewards[choice] += reward
                 visits[choice] += 1
                 if config["debug"] and i % 20 == 0:
                     print("DEBUG: MAB iteration: {} |".format(i+1), rewards, visits)
             acc_score = get_accuracy_for_selected_features(best_selected_features)
             end = time.time()
-            print(dataset, "DPSO (MAB)", repetition+1, config["nof_mab_iterations"], "", "", acc_score, end-start, ','.join(map(str, selected_features)), sep=";")
+            print(dataset, "DPSO (MAB)", repetition+1, "", "", "", best_cost, acc_score, len(best_selected_features), end-start, ','.join(map(str, selected_features)), sep=";")
             sys.stdout.flush()
     #endregion
 
