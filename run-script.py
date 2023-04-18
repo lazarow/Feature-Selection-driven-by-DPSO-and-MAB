@@ -97,11 +97,8 @@ def get_accuracy_for_selected_features(selected_features, process_index = 0):
 total_nof_features = X.shape[1]
 def fitness_function(selected_features, process_index):
     acc_score = get_accuracy_for_selected_features(selected_features, process_index)
-    nof_selected_features = 0
-    for x in selected_features:
-        if x == 1:
-            nof_selected_features += 1
-    return config["alpha"] * (1.0 - acc_score) + (1.0 - config["alpha"]) * (1 - nof_selected_features / total_nof_features)
+    nof_selected_features = np.count_nonzero(selected_features == 1)
+    return config["alpha"] * (1.0 - acc_score) + (1.0 - config["alpha"]) * (nof_selected_features / total_nof_features)
 #endregion
 
 #region The objective function for a set of particles.
