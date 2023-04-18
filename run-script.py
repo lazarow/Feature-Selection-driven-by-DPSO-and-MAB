@@ -275,7 +275,7 @@ if __name__ == '__main__':
                 rewards[choice] += reward
                 visits[choice] += 1
                 if config["debug"]:
-                    print("DEBUG: MAB iteration: {}".format(time_step+1), "Improvement" if reward == 1 else "Stagnation", rewards, visits, total_time_steps, sep=" | ")
+                    print("DEBUG: MAB iteration: {}".format(time_step), "Improvement" if reward == 1 else "Stagnation", rewards, visits, total_time_steps, sep=" | ")
 
                 iter25 = round((real_total_time_steps * 0.25) / config["nof_iterations_before_reward"]) * config["nof_iterations_before_reward"]
                 if time_step == iter25:
