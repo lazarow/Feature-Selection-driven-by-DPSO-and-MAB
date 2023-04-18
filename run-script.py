@@ -196,7 +196,7 @@ if __name__ == '__main__':
         selected_features = np.ones((X.shape[1],), dtype=int)
         acc_score = get_accuracy_for_selected_features(selected_features)
         end = time.time()
-        print(dataset, "No feature selection", 1, "", "", "", (config["alpha"] * (1.0 - acc_score)), acc_score, len(selected_features), end-start, "", sep=";")
+        print(dataset, "No feature selection", 1, "", "", "", (config["alpha"] * (1.0 - acc_score) + (1 - config["alpha"])), acc_score, len(selected_features), end-start, "", sep=";")
         sys.stdout.flush()
     #endregion
 
