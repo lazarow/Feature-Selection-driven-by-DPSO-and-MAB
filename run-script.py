@@ -27,6 +27,7 @@ parser.add_argument("--nof_mab_iterations", default=300)
 parser.add_argument("--print_header", action="store_true")
 parser.add_argument("--no_fs", action="store_true")
 parser.add_argument("--seed", default=5471427)
+parser.add_argument("--best_grid_search", action="store_true")
 args = parser.parse_args()
 config = vars(args)
 # For the fitness function:
@@ -299,6 +300,61 @@ if __name__ == '__main__':
             acc_score = get_accuracy_for_selected_features(best_selected_features)
             end = time.time()
             print(dataset, "DPSO (MAB)", repetition+1, time_step, "100%", "", best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), ','.join(map(str, rewards)), ','.join(map(str, visits)), sep=";")
+            sys.stdout.flush()
+    #endregion
+
+    #region Best of Grid Search.
+    if config["best_grid_search"]:
+        c1 = 2.5
+        c2 = 2.5
+        if dataset == 'soybean-large-preprocessed':
+            c1 = 2.5
+            c2 = 2.5
+        elif dataset == 'arrhythmia-preprocessed':
+            c1 = 2.5
+            c2 = 2.5
+        elif dataset == 'arrhythmia-preprocessed':
+            c1 = 2.5
+            c2 = 2.5
+        elif dataset == 'ad-preprocessed':
+            c1 = 2
+            c2 = 2
+        for repetition in range(int(config["nof_repetitions"])):
+            start = time.time()
+            dpso = DPSO(options={"c1": c1, "c2": c2})
+            best_cost = np.inf
+            best_selected_features = None
+            real_total_time_steps = len(hyper_parameters_space) * config["nof_pso_iterations"]
+            dpso.total_time_steps = real_total_time_steps
+            time_step = 0
+            while time_step < real_total_time_steps:
+                dpso.iterate()
+                time_step += 1
+                cost, selected_features = dpso.get_best()
+                if cost < best_cost:
+                    best_cost = cost
+                    best_selected_features = selected_features
+                iter25 = round(real_total_time_steps * 0.25)
+                if time_step == iter25:
+                    end = time.time()
+                    acc_score = get_accuracy_for_selected_features(best_selected_features)
+                    print(dataset, "DPSO (Grid-Search Best)", repetition+1, time_step, "25%", "c1:"+str(c1)+",c2:"+str(c2), best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), "", "", sep=";")  
+                    sys.stdout.flush()
+                iter50 = round(real_total_time_steps * 0.50)
+                if time_step == iter50:
+                    end = time.time()
+                    acc_score = get_accuracy_for_selected_features(best_selected_features)
+                    print(dataset, "DPSO (Grid-Search Best)", repetition+1, time_step, "50%", "c1:"+str(c1)+",c2:"+str(c2), best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), "", "", sep=";")        
+                    sys.stdout.flush()
+                iter75 = round(real_total_time_steps * 0.75)
+                if time_step == iter75:
+                    end = time.time()
+                    acc_score = get_accuracy_for_selected_features(best_selected_features)
+                    print(dataset, "DPSO (Grid-Search Best)", repetition+1, time_step, "75%", "c1:"+str(c1)+",c2:"+str(c2), best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), "", "", sep=";")        
+                    sys.stdout.flush()
+            acc_score = get_accuracy_for_selected_features(best_selected_features)
+            end = time.time()
+            print(dataset, "DPSO (Grid-Search Best)", repetition+1, time_step, "100%", "c1:"+str(c1)+",c2:"+str(c2), best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), "", "", sep=";")
             sys.stdout.flush()
     #endregion
 
