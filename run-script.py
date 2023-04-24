@@ -28,6 +28,7 @@ parser.add_argument("--print_header", action="store_true")
 parser.add_argument("--no_fs", action="store_true")
 parser.add_argument("--seed", default=5471427)
 parser.add_argument("--best_grid_search", action="store_true")
+parser.add_argument("--random_search", action="store_true")
 args = parser.parse_args()
 config = vars(args)
 # For the fitness function:
@@ -208,8 +209,8 @@ if __name__ == '__main__':
         for c2 in c_set:
             hyper_parameters_space.append({"c1": c1, "c2": c2})
     if config["debug"]:
-        print("DEBUG:", len(hyper_parameters_space))
-        print("DEBUG:", hyper_parameters_space)
+        print("DEBUG: Grid Search Hyper-Parameters Space", len(hyper_parameters_space))
+        print("DEBUG: Grid Search Hyper-Parameters Space", hyper_parameters_space)
     #endregion
 
     #region Grid-Search
@@ -356,6 +357,29 @@ if __name__ == '__main__':
             end = time.time()
             print(dataset, "DPSO (Grid-Search Best)", repetition+1, time_step, "100%", "c1:"+str(c1)+",c2:"+str(c2), best_cost, acc_score, np.count_nonzero(best_selected_features == 1), end-start, ','.join(map(str, best_selected_features)), "", "", sep=";")
             sys.stdout.flush()
+    #endregion
+
+    #region Random Search.
+    if config["random_search"]:
+        random.seed(config["seed"])
+        random_hyper_parameters_space = []
+        for i in range(25):
+            random_hyper_parameters_space.append({"c1": random.uniform(0.5, 2.5), "c2": random.uniform(0.5, 2.5)})
+        if config["debug"]:
+            print("DEBUG: Random Search Hyper-Parameters Space", len(random_hyper_parameters_space))
+            print("DEBUG: Random Search Hyper-Parameters Space", random_hyper_parameters_space)
+        random.seed(None)
+        for hyper_parameters in random_hyper_parameters_space:
+            for repetition in range(int(config["nof_repetitions"])):
+                start = time.time()
+                dpso = DPSO(options={"c1": hyper_parameters["c1"], "c2": hyper_parameters["c2"]})
+                dpso.total_time_steps = config["nof_pso_iterations"]
+                dpso.optimize(config["nof_pso_iterations"])
+                cost, selected_features = dpso.get_best()
+                acc_score = get_accuracy_for_selected_features(selected_features)
+                end = time.time()
+                print(dataset, "DPSO (Random Search)", repetition + 1, hyper_parameters["c1"], hyper_parameters["c2"], "", cost, acc_score, np.count_nonzero(selected_features == 1), end-start, ','.join(map(str, selected_features)), "", "", sep=";")
+                sys.stdout.flush()
     #endregion
 
     #region Multi-processing support.
