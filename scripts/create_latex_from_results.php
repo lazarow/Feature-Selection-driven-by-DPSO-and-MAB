@@ -4,7 +4,9 @@ $results = [
     'grid-search' => [],
     'best-grid-search' => [],
     'best-grid-search-full' => [],
-    'mab' => []
+    'mab' => [],
+    'random-search' => [],
+    'best-random-search' => []
 ];
 
 function sd_square($x, $mean) {
@@ -114,6 +116,37 @@ foreach ($problems_results as $problem_results) {
 }
 #endregion
 
+#region Random Search.
+$lines = array_filter(array_map(function ($line) {
+    return strlen($line) ? explode(';', trim($line)) : null;
+}, explode("\n", file_get_contents(__DIR__ . '/../random_search.csv'))));
+$lines = array_slice($lines, 1); // Remove header.
+$problems_results = array_chunk($lines, 250, false);
+foreach ($problems_results as $problem_results) {
+    $baseline = $problem_results[0];
+    $results['random-search'][$baseline[0]] = null;
+    $results['best-random-search'][$baseline[0]] = null;
+    $random_search_results = array_chunk($problem_results, 10);
+    foreach ($random_search_results as $config_results) {
+        $metrics = [
+            'c1' => (float) $config_results[0][3],
+            'c2' => (float) $config_results[0][4],
+            'cost' => get_mean_and_sd(array_map(function ($x) { return (float) $x; }, array_column($config_results, 6))),
+            'accuracy' => get_mean_and_sd(array_map(function ($x) { return (float) $x; }, array_column($config_results, 7))),
+            'nof.features' => get_mean_and_sd(array_map(function ($x) { return (int) $x; }, array_column($config_results, 8))),
+            'time' => get_mean_and_sd(array_map(function ($x) { return (float) $x; }, array_column($config_results, 9))),
+        ];
+        $results['random-search'][$baseline[0]][] = $metrics;
+        if (
+            is_null($results['best-random-search'][$baseline[0]])
+            || $metrics['cost'] < $results['best-random-search'][$baseline[0]]['cost']
+        ) {
+            $results['best-random-search'][$baseline[0]] = $metrics;
+        }
+    }
+}
+#endregion
+
 $datasets = [
     'soybean-large-preprocessed' => 'Soybean (Large) Data Set',
     'anneal-preprocessed' => 'Annealing Data Set',
@@ -182,19 +215,18 @@ echo '\begin{table}[h]' . PHP_EOL;
 echo '\caption{...}' . PHP_EOL;
 echo '\label{tab:grid_search_vs_mab}' . PHP_EOL;
 echo '\scriptsize' . PHP_EOL;
-echo '\begin{tabular*}{\hsize}{@{\extracolsep{\fill}}llrrrrrr@{}}' . PHP_EOL;
+echo '\begin{tabular*}{\hsize}{@{\extracolsep{\fill}}llrrrrr@{}}' . PHP_EOL;
 echo '\toprule' . PHP_EOL;
 echo 'Data Set';
 echo ' & Metric';
 echo ' & No-FS';
-echo ' & DPSO\textsubscript{$m*$}';
-echo ' & DPSO\textsubscript{MAB}';
-echo ' & DPSO\textsubscript{MAB}';
+echo ' & DPSO\textsubscript{best-grid}';
+echo ' & DPSO\textsubscript{best-random}';
 echo ' & DPSO\textsubscript{MAB}';
 echo ' & DPSO\textsubscript{MAB}';
 echo '\\\\' . PHP_EOL;
 echo '\colrule' . PHP_EOL;
-echo ' & Nof. Iterations  & 1 & 100 & 620 (25\%) & 1250 (50\%) & 1880 (75\%) & 2500 (100\%)';
+echo ' & Nof. Iterations  & 1 & 100 & 100 & 620 (25\%) & 2500 (100\%)';
 echo '\\\\' . PHP_EOL;
 $table_metrics = [
     'cost' => 'Avg. Cost',
@@ -218,9 +250,8 @@ foreach ($datasets as $dataset => $dataset_name) {
         echo ' & ' . $metric_name;
         echo ' & $' . number_format($results['no-fs'][$dataset][$metric], $precision, '.', '') . '$';
         echo ' & $' . number_format($results['best-grid-search'][$dataset][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['best-grid-search'][$dataset][$metric][1], $precision, '.', '') . '$';
+        echo ' & $' . number_format($results['best-random-search'][$dataset][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['best-random-search'][$dataset][$metric][1], $precision, '.', '') . '$';
         echo ' & $' . number_format($results['mab'][$dataset]['25%'][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['mab'][$dataset]['25%'][$metric][1], $precision, '.', '') . '$';
-        echo ' & $' . number_format($results['mab'][$dataset]['50%'][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['mab'][$dataset]['50%'][$metric][1], $precision, '.', '') . '$';
-        echo ' & $' . number_format($results['mab'][$dataset]['75%'][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['mab'][$dataset]['75%'][$metric][1], $precision, '.', '') . '$';
         echo ' & $' . number_format($results['mab'][$dataset]['100%'][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['mab'][$dataset]['100%'][$metric][1], $precision, '.', '') . '$';
         echo '\\\\' . PHP_EOL;
         $first = false;
@@ -240,14 +271,13 @@ echo '\begin{tabular*}{\hsize}{@{\extracolsep{\fill}}llrrrrr@{}}' . PHP_EOL;
 echo '\toprule' . PHP_EOL;
 echo 'Data Set';
 echo ' & Metric';
-echo ' & DPSO\textsubscript{$m*$}';
-echo ' & DPSO\textsubscript{$m*$}';
-echo ' & DPSO\textsubscript{$m*$}';
-echo ' & DPSO\textsubscript{$m*$}';
+echo ' & DPSO\textsubscript{best-grid}';
+echo ' & DPSO\textsubscript{best-grid}';
+echo ' & DPSO\textsubscript{MAB}';
 echo ' & DPSO\textsubscript{MAB}';
 echo '\\\\' . PHP_EOL;
 echo '\colrule' . PHP_EOL;
-echo ' & Nof. Iterations  & 620 (25\%) & 1250 (50\%) & 1880 (75\%) & 2500 (100\%) & 2500 (100\%)';
+echo ' & Nof. Iterations  & 620 (25\%) & 2500 (100\%) & 620 (25\%) & 2500 (100\%)';
 echo '\\\\' . PHP_EOL;
 $table_metrics = [
     'cost' => 'Avg. Cost',
@@ -270,9 +300,8 @@ foreach ($datasets as $dataset => $dataset_name) {
         }
         echo ' & ' . $metric_name;
         echo ' & $' . number_format($results['best-grid-search-full'][$dataset]['25%'][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['best-grid-search-full'][$dataset]['25%'][$metric][1], $precision, '.', '') . '$';
-        echo ' & $' . number_format($results['best-grid-search-full'][$dataset]['50%'][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['best-grid-search-full'][$dataset]['50%'][$metric][1], $precision, '.', '') . '$';
-        echo ' & $' . number_format($results['best-grid-search-full'][$dataset]['75%'][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['best-grid-search-full'][$dataset]['75%'][$metric][1], $precision, '.', '') . '$';
         echo ' & $' . number_format($results['best-grid-search-full'][$dataset]['100%'][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['best-grid-search-full'][$dataset]['100%'][$metric][1], $precision, '.', '') . '$';
+        echo ' & $' . number_format($results['mab'][$dataset]['25%'][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['mab'][$dataset]['100%'][$metric][1], $precision, '.', '') . '$';
         echo ' & $' . number_format($results['mab'][$dataset]['100%'][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['mab'][$dataset]['100%'][$metric][1], $precision, '.', '') . '$';
         echo '\\\\' . PHP_EOL;
         $first = false;
@@ -296,6 +325,10 @@ foreach(array_keys($datasets) as $dataset) {
     echo '  - Cost: ' . print_mean_and_sd($results['best-grid-search'][$dataset]['cost']) . PHP_EOL;
     echo '  - Accuracy: ' . print_mean_and_sd($results['best-grid-search'][$dataset]['accuracy']) . PHP_EOL;
     echo '  - Nof. Features: ' . print_mean_and_sd($results['best-grid-search'][$dataset]['nof.features']) . PHP_EOL;
+    echo '- Best from Random Search (c1=' . $results['best-random-search'][$dataset]['c1'] . ', c2=' . $results['best-random-search'][$dataset]['c2'] . '):' . PHP_EOL;
+    echo '  - Cost: ' . print_mean_and_sd($results['best-random-search'][$dataset]['cost']) . PHP_EOL;
+    echo '  - Accuracy: ' . print_mean_and_sd($results['best-random-search'][$dataset]['accuracy']) . PHP_EOL;
+    echo '  - Nof. Features: ' . print_mean_and_sd($results['best-random-search'][$dataset]['nof.features']) . PHP_EOL;
     foreach (['25%', '50%', '75%', '100%'] as $percent) {
         echo '- MAB (' . $percent . '):' . PHP_EOL;
         echo '  - Cost: ' . print_mean_and_sd($results['mab'][$dataset][$percent]['cost']) . PHP_EOL;
