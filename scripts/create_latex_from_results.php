@@ -174,7 +174,7 @@ foreach ($results['grid-search'] as $dataset => $config_results) {
     echo '      \centering' . PHP_EOL;
     echo '      \caption{' . $datasets[$dataset] . '}' . PHP_EOL;
     echo '      \begin{tikzpicture}[]' . PHP_EOL;
-    echo '          \begin{axis}[ymin=' . $plot_configs[$dataset]['ymin'] . ',ymax=' . $plot_configs[$dataset]['ymax'] . ',compat=1.18,ylabel={Cost (the lower the better)},xlabel={An index of a configuration $m_i \in M$},symbolic x coords={' . implode(',', array_map(function ($i) {
+    echo '          \begin{axis}[ymin=' . $plot_configs[$dataset]['ymin'] . ',ymax=' . $plot_configs[$dataset]['ymax'] . ',compat=1.18,ylabel={$Fit$},xlabel={An index of a configuration $m_i \in M$},symbolic x coords={' . implode(',', array_map(function ($i) {
         return '$' . ($i + 1) . '$';
     }, array_keys($config_results))) . '},legend style={at={(' . $plot_configs[$dataset]['legend at'] . ')},anchor=' . $plot_configs[$dataset]['legend anchor'] . ',font=\scriptsize},xtick=data,xticklabel style={font=\tiny},label style={font=\scriptsize},enlargelimits=0.02,ytick style={draw=none},xtick style={draw=none},yticklabel style={font=\scriptsize,/pgf/number format/fixed,/pgf/number format/precision=3},scaled y ticks=false]' . PHP_EOL;
     echo '              \addplot[mark=star,mark size=1][] coordinates {' . PHP_EOL;
@@ -188,31 +188,25 @@ foreach ($results['grid-search'] as $dataset => $config_results) {
         echo '                  ($' . ($i + 1) . '$, ' . round($metrics['cost'][0], 3) . ')' . PHP_EOL;
     }
     echo '              };' . PHP_EOL;
-    echo '              \addlegendentry{Grid-Search}' . PHP_EOL;
-    echo '              \addplot[mark=triangle*,mark size=1][] coordinates {' . PHP_EOL;
-    foreach (array_keys($config_results) as $i) {
-        echo '                  ($' . ($i + 1) . '$, ' . round($results['mab'][$dataset]['25%']['cost'][0], 3) . ')' . PHP_EOL;
-    }
-    echo '              };' . PHP_EOL;
-    echo '              \addlegendentry{MAB (25\%)}' . PHP_EOL;
+    echo '              \addlegendentry{Grid Search}' . PHP_EOL;
     echo '              \addplot[mark=diamond*,mark size=1][] coordinates {' . PHP_EOL;
     foreach (array_keys($config_results) as $i) {
         echo '                  ($' . ($i + 1) . '$, ' . round($results['mab'][$dataset]['100%']['cost'][0], 3) . ')' . PHP_EOL;
     }
     echo '              };' . PHP_EOL;
-    echo '              \addlegendentry{MAB (100\%)}' . PHP_EOL;
+    echo '              \addlegendentry{BPSO MAB}' . PHP_EOL;
     echo '          \end{axis}' . PHP_EOL;
     echo '      \end{tikzpicture}' . PHP_EOL;
     echo '  \end{subfigure}' . PHP_EOL;
 }
-echo '\caption{...}' . PHP_EOL;
+echo '\caption{The performance of the grid search (Grid Search), the proposed method (BPSO MAB), and the baseline without feature selection.}' . PHP_EOL;
 echo '\label{fig:grid_search}' . PHP_EOL;
 echo '\end{figure}' . PHP_EOL;
 file_put_contents(__DIR__ . '/../Feature-Selection-driven-by-DPSO-and-MAB-Article/figure_grid_search.tex', ob_get_clean());
 
 ob_start();
 echo '\begin{table}[h]' . PHP_EOL;
-echo '\caption{...}' . PHP_EOL;
+echo '\caption{Performance table of the grid search (Grid Search), random search (Random Search), and our proposed method (BPSO MAB). Averages and standard deviations of metrics are reported on each dataset for all algorithms as well as no feature selection (No-FS). For the grid and random search approaches, the measured values were reported for the best-found configuration only.}' . PHP_EOL;
 echo '\label{tab:grid_search_vs_mab}' . PHP_EOL;
 echo '\scriptsize' . PHP_EOL;
 echo '\begin{tabular*}{\hsize}{@{\extracolsep{\fill}}llrrrrr@{}}' . PHP_EOL;
@@ -220,20 +214,35 @@ echo '\toprule' . PHP_EOL;
 echo 'Data Set';
 echo ' & Metric';
 echo ' & No-FS';
-echo ' & DPSO\textsubscript{best-grid}';
-echo ' & DPSO\textsubscript{best-random}';
-echo ' & DPSO\textsubscript{MAB}';
-echo ' & DPSO\textsubscript{MAB}';
+echo ' & Grid Search';
+echo ' & Random Search';
+echo ' & BPSO MAB';
 echo '\\\\' . PHP_EOL;
 echo '\colrule' . PHP_EOL;
-echo ' & Nof. Iterations  & 1 & 100 & 100 & 620 (25\%) & 2500 (100\%)';
+echo ' & Nof. Iterations  & 1 & $100 \cdot 25$ & $100 \cdot 25$ & 2500';
 echo '\\\\' . PHP_EOL;
 $table_metrics = [
-    'cost' => 'Avg. Cost',
-    'accuracy' => 'Avg. Accuracy',
+    'cost' => 'Avg. $Fit$',
+    'accuracy' => 'Avg. $Acc$',
     'nof.features' => 'Avg. Nof. Features',
     'time' => 'Avg. Time [s]'
 ];
+$isBold = [];
+foreach (array_keys($datasets) as $dataset) {
+    $isBold[$dataset] = [];
+    foreach (array_keys($table_metrics) as $metric) {
+        $isBold[$dataset][$metric] = [
+            'no-fs' => 0,
+            'best-grid-search' => 0,
+            'best-random-search' => 0,
+            'mab' => 0
+        ];
+    }
+    $isBold[$dataset]['cost']['mab'] = 1;
+    $isBold[$dataset]['accuracy']['mab'] = 1;
+    $isBold[$dataset]['nof.features']['mab'] = 1;
+}
+
 foreach ($datasets as $dataset => $dataset_name) {
     $first = true;
     echo '\colrule' . PHP_EOL;
@@ -251,8 +260,11 @@ foreach ($datasets as $dataset => $dataset_name) {
         echo ' & $' . number_format($results['no-fs'][$dataset][$metric], $precision, '.', '') . '$';
         echo ' & $' . number_format($results['best-grid-search'][$dataset][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['best-grid-search'][$dataset][$metric][1], $precision, '.', '') . '$';
         echo ' & $' . number_format($results['best-random-search'][$dataset][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['best-random-search'][$dataset][$metric][1], $precision, '.', '') . '$';
-        echo ' & $' . number_format($results['mab'][$dataset]['25%'][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['mab'][$dataset]['25%'][$metric][1], $precision, '.', '') . '$';
-        echo ' & $' . number_format($results['mab'][$dataset]['100%'][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['mab'][$dataset]['100%'][$metric][1], $precision, '.', '') . '$';
+        if ($isBold[$dataset][$metric]['mab']) {
+            echo ' & \boldmath{$' . number_format($results['mab'][$dataset]['100%'][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['mab'][$dataset]['100%'][$metric][1], $precision, '.', '') . '$}';
+        } else {
+            echo ' & $' . number_format($results['mab'][$dataset]['100%'][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['mab'][$dataset]['100%'][$metric][1], $precision, '.', '') . '$';
+        }
         echo '\\\\' . PHP_EOL;
         $first = false;
     }
@@ -271,17 +283,15 @@ echo '\begin{tabular*}{\hsize}{@{\extracolsep{\fill}}llrrrrr@{}}' . PHP_EOL;
 echo '\toprule' . PHP_EOL;
 echo 'Data Set';
 echo ' & Metric';
-echo ' & DPSO\textsubscript{best-grid}';
-echo ' & DPSO\textsubscript{best-grid}';
-echo ' & DPSO\textsubscript{MAB}';
-echo ' & DPSO\textsubscript{MAB}';
+echo ' & BPSO$^*$';
+echo ' & BPSO MAB';
 echo '\\\\' . PHP_EOL;
 echo '\colrule' . PHP_EOL;
-echo ' & Nof. Iterations  & 620 (25\%) & 2500 (100\%) & 620 (25\%) & 2500 (100\%)';
+echo ' & Nof. Iterations & $2500 \cdot 2$ & 2500';
 echo '\\\\' . PHP_EOL;
 $table_metrics = [
-    'cost' => 'Avg. Cost',
-    'accuracy' => 'Avg. Accuracy',
+    'cost' => 'Avg. $Fit$',
+    'accuracy' => 'Avg. $Acc$',
     'nof.features' => 'Avg. Nof. Features',
     'time' => 'Avg. Time [s]'
 ];
@@ -299,9 +309,7 @@ foreach ($datasets as $dataset => $dataset_name) {
             $precision = 2;
         }
         echo ' & ' . $metric_name;
-        echo ' & $' . number_format($results['best-grid-search-full'][$dataset]['25%'][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['best-grid-search-full'][$dataset]['25%'][$metric][1], $precision, '.', '') . '$';
         echo ' & $' . number_format($results['best-grid-search-full'][$dataset]['100%'][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['best-grid-search-full'][$dataset]['100%'][$metric][1], $precision, '.', '') . '$';
-        echo ' & $' . number_format($results['mab'][$dataset]['25%'][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['mab'][$dataset]['100%'][$metric][1], $precision, '.', '') . '$';
         echo ' & $' . number_format($results['mab'][$dataset]['100%'][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['mab'][$dataset]['100%'][$metric][1], $precision, '.', '') . '$';
         echo '\\\\' . PHP_EOL;
         $first = false;
