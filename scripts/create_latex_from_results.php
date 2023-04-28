@@ -178,7 +178,7 @@ foreach ($results['grid-search'] as $dataset => $config_results) {
     echo '      \centering' . PHP_EOL;
     echo '      \caption{' . $datasets[$dataset] . '}' . PHP_EOL;
     echo '      \begin{tikzpicture}[]' . PHP_EOL;
-    echo '          \begin{axis}[ymin=' . $plot_configs[$dataset]['ymin'] . ',ymax=' . $plot_configs[$dataset]['ymax'] . ',compat=1.18,ylabel={$Fit$},xlabel={An index of a configuration $m_i \in M$},symbolic x coords={' . implode(',', array_map(function ($i) {
+    echo '          \begin{axis}[ymin=' . $plot_configs[$dataset]['ymin'] . ',ymax=' . $plot_configs[$dataset]['ymax'] . ',compat=1.18,ylabel={$\text{\it Fit}$},xlabel={An index of a configuration $m_i \in M$},symbolic x coords={' . implode(',', array_map(function ($i) {
         return '$' . ($i + 1) . '$';
     }, array_keys($config_results))) . '},legend style={at={(' . $plot_configs[$dataset]['legend at'] . ')},anchor=' . $plot_configs[$dataset]['legend anchor'] . ',font=\scriptsize},xtick=data,xticklabel style={font=\tiny},label style={font=\scriptsize},enlargelimits=0.02,ytick style={draw=none},xtick style={draw=none},yticklabel style={font=\scriptsize,/pgf/number format/fixed,/pgf/number format/precision=3},scaled y ticks=false]' . PHP_EOL;
     echo '              \addplot[mark=star,mark size=1][] coordinates {' . PHP_EOL;
@@ -203,14 +203,14 @@ foreach ($results['grid-search'] as $dataset => $config_results) {
     echo '      \end{tikzpicture}' . PHP_EOL;
     echo '  \end{subfigure}' . PHP_EOL;
 }
-echo '\caption{The performance of the grid search (Grid Search), the proposed method (BPSO MAB), and the baseline without feature selection.}' . PHP_EOL;
+echo '\caption{The performance of the Grid Search, the proposed method (BPSO MAB), and the baseline without feature selection.}' . PHP_EOL;
 echo '\label{fig:grid_search}' . PHP_EOL;
 echo '\end{figure}' . PHP_EOL;
 file_put_contents(__DIR__ . '/../Feature-Selection-driven-by-DPSO-and-MAB-Article/figure_grid_search.tex', ob_get_clean());
 
 ob_start();
 echo '\begin{table}[h]' . PHP_EOL;
-echo '\caption{Performance table of the grid search (Grid Search), random search (Random Search), and our proposed method (BPSO MAB). Averages and standard deviations of metrics are reported on each dataset for all algorithms as well as no feature selection (No-FS). For the grid and random search approaches, the measured values were reported for the best-found configuration only.}' . PHP_EOL;
+echo '\caption{Performance table of the Grid Search, the Random Search, and our proposed method (BPSO MAB). Averages and standard deviations of metrics are reported on each dataset for all algorithms as well as no feature selection (No-FS). For the grid and random search approaches, the measured values were reported for the best-found configuration only.}' . PHP_EOL;
 echo '\label{tab:grid_search_vs_mab}' . PHP_EOL;
 echo '\scriptsize' . PHP_EOL;
 echo '\begin{tabular*}{\hsize}{@{\extracolsep{\fill}}llrrrrr@{}}' . PHP_EOL;
@@ -223,11 +223,11 @@ echo ' & Random Search';
 echo ' & BPSO MAB';
 echo '\\\\' . PHP_EOL;
 echo '\colrule' . PHP_EOL;
-echo ' & Nof. Iterations  & 1 & $100 \cdot 25$ & $100 \cdot 25$ & 2500';
+echo ' & Nof. Iterations  & 1 & $100 \times 25$ conf. & $100 \times 25$ conf. & 2500';
 echo '\\\\' . PHP_EOL;
 $table_metrics = [
-    'cost' => 'Avg. $Fit$',
-    'accuracy' => 'Avg. $Acc$',
+    'cost' => 'Avg. $\text{\it Fit}$',
+    'accuracy' => 'Avg. $\text{\it Acc}$',
     'nof.features' => 'Avg. Nof. Features',
     'time' => 'Avg. Time [s]'
 ];
@@ -246,6 +246,12 @@ foreach (array_keys($datasets) as $dataset) {
     $isBold[$dataset]['accuracy']['mab'] = 1;
     $isBold[$dataset]['nof.features']['mab'] = 1;
 }
+$isBold['arrhythmia-preprocessed']['accuracy']['mab'] = 0;
+$isBold['arrhythmia-preprocessed']['accuracy']['best-grid-search'] = 1;
+$isBold['anneal-preprocessed']['accuracy']['best-random-search'] = 1;
+$isBold['anneal-preprocessed']['accuracy']['mab'] = 1;
+$isBold['ad-preprocessed']['accuracy']['mab'] = 0;
+$isBold['ad-preprocessed']['accuracy']['no-fs'] = 1;
 
 foreach ($datasets as $dataset => $dataset_name) {
     $first = true;
@@ -261,9 +267,21 @@ foreach ($datasets as $dataset => $dataset_name) {
             $precision = 2;
         }
         echo ' & ' . $metric_name;
-        echo ' & $' . number_format($results['no-fs'][$dataset][$metric], $precision, '.', '') . '$';
-        echo ' & $' . number_format($results['best-grid-search'][$dataset][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['best-grid-search'][$dataset][$metric][1], $precision, '.', '') . '$';
-        echo ' & $' . number_format($results['best-random-search'][$dataset][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['best-random-search'][$dataset][$metric][1], $precision, '.', '') . '$';
+        if ($isBold[$dataset][$metric]['no-fs']) {
+            echo ' & \boldmath{$' . number_format($results['no-fs'][$dataset][$metric], $precision, '.', '') . '$}';
+        } else {
+            echo ' & $' . number_format($results['no-fs'][$dataset][$metric], $precision, '.', '') . '$';
+        }
+        if ($isBold[$dataset][$metric]['best-grid-search']) {
+            echo ' & \boldmath{$' . number_format($results['best-grid-search'][$dataset][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['best-grid-search'][$dataset][$metric][1], $precision, '.', '') . '$}';
+        } else {
+            echo ' & $' . number_format($results['best-grid-search'][$dataset][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['best-grid-search'][$dataset][$metric][1], $precision, '.', '') . '$';
+        }
+        if ($isBold[$dataset][$metric]['best-random-search']) {
+            echo ' & \boldmath{$' . number_format($results['best-random-search'][$dataset][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['best-random-search'][$dataset][$metric][1], $precision, '.', '') . '$}';
+        } else {
+            echo ' & $' . number_format($results['best-random-search'][$dataset][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['best-random-search'][$dataset][$metric][1], $precision, '.', '') . '$';
+        }
         if ($isBold[$dataset][$metric]['mab']) {
             echo ' & \boldmath{$' . number_format($results['mab'][$dataset]['100%'][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['mab'][$dataset]['100%'][$metric][1], $precision, '.', '') . '$}';
         } else {
@@ -288,6 +306,14 @@ foreach (array_keys($datasets) as $dataset) {
         ];
     }
 }
+$isBold['soybean-large-preprocessed']['cost']['mab'] = 1;
+$isBold['soybean-large-preprocessed']['cost']['best-grid-search-full'] = 1;
+$isBold['ad-preprocessed']['cost']['mab'] = 1;
+$isBold['ad-preprocessed']['cost']['best-grid-search-full'] = 1;
+$isBold['anneal-preprocessed']['cost']['mab'] = 1;
+$isBold['anneal-preprocessed']['cost']['best-grid-search-full'] = 1;
+$isBold['anneal-preprocessed']['nof.features']['mab'] = 1;
+$isBold['anneal-preprocessed']['nof.features']['best-grid-search-full'] = 1;
 $isBold['soybean-large-preprocessed']['accuracy']['mab'] = 1;
 $isBold['soybean-large-preprocessed']['nof.features']['mab'] = 1;
 $isBold['anneal-preprocessed']['accuracy']['mab'] = 1;
@@ -298,7 +324,7 @@ $isBold['ad-preprocessed']['accuracy']['best-grid-search-full'] = 1;
 $isBold['ad-preprocessed']['nof.features']['mab'] = 1;
 ob_start();
 echo '\begin{table}[h]' . PHP_EOL;
-echo '\caption{Performance table of the most-promising hyperparameter configuration of BPSO (BPSO*) found in the first part of the experiments and our proposed method (BPSO MAB). Averages and standard deviations of metrics are reported on each dataset for both algorithms.}' . PHP_EOL;
+echo '\caption{Performance table of the most-promising hyperparameter configuration of BPSO* found in the first part of the experiments and our proposed method (BPSO MAB). Averages and standard deviations of metrics are reported on each dataset for both algorithms.}' . PHP_EOL;
 echo '\label{tab:best_grid_search_vs_mab}' . PHP_EOL;
 echo '\scriptsize' . PHP_EOL;
 echo '\begin{tabular*}{\hsize}{@{\extracolsep{\fill}}llrrrrr@{}}' . PHP_EOL;
@@ -309,11 +335,11 @@ echo ' & BPSO$^*$';
 echo ' & BPSO MAB';
 echo '\\\\' . PHP_EOL;
 echo '\colrule' . PHP_EOL;
-echo ' & Nof. Iterations & $2500 \cdot 2$ & 2500';
+echo ' & Nof. Iterations & $2500 + 2500$ & 2500';
 echo '\\\\' . PHP_EOL;
 $table_metrics = [
-    'cost' => 'Avg. $Fit$',
-    'accuracy' => 'Avg. $Acc$',
+    'cost' => 'Avg. $\text{\it Fit}$',
+    'accuracy' => 'Avg. $\text{\it Acc}$',
     'nof.features' => 'Avg. Nof. Features',
     'time' => 'Avg. Time [s]'
 ];
