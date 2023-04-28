@@ -24,6 +24,29 @@ Install required libraries.
 pip install -r requirements.txt
 ```
 
+## Running
+
+```
+usage: run-script.py [-h] [--debug] [--grid_search] [--mab] [--nof_mab_iterations NOF_MAB_ITERATIONS] [--print_header]
+                     [--no_fs] [--seed SEED] [--best_grid_search] [--random_search]
+                     dataset_filepath
+
+positional arguments:
+  dataset_filepath
+
+options:
+  -h, --help            show this help message and exit
+  --debug
+  --grid_search
+  --mab
+  --nof_mab_iterations NOF_MAB_ITERATIONS
+  --print_header
+  --no_fs
+  --seed SEED
+  --best_grid_search
+  --random_search
+```
+
 ## Datasets
 
 The experiments were conducted on 4 selected datasets from [the UCI repository](https://archive.ics.uci.edu/ml/index.php):
