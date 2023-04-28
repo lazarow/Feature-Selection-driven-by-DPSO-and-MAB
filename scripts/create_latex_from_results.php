@@ -46,6 +46,7 @@ foreach ($problems_results as $problem_results) {
             'accuracy' => get_mean_and_sd(array_map(function ($x) { return (float) $x; }, array_column($config_results, 7))),
             'nof.features' => get_mean_and_sd(array_map(function ($x) { return (int) $x; }, array_column($config_results, 8))),
             'time' => get_mean_and_sd(array_map(function ($x) { return (float) $x; }, array_column($config_results, 9))),
+            'data' => array_column($config_results, 6)
         ];
         $results['grid-search'][$baseline[0]][] = $metrics;
         if (
@@ -82,6 +83,7 @@ foreach ($problems_results as $problem_results) {
             'accuracy' => get_mean_and_sd(array_map(function ($x) { return (float) $x; }, array_column($percent_result, 7))),
             'nof.features' => get_mean_and_sd(array_map(function ($x) { return (int) $x; }, array_column($percent_result, 8))),
             'time' => get_mean_and_sd(array_map(function ($x) { return (float) $x; }, array_column($percent_result, 9))),
+            'data' => array_column($percent_result, 6)
         ];
     }
 }
@@ -111,6 +113,7 @@ foreach ($problems_results as $problem_results) {
             'accuracy' => get_mean_and_sd(array_map(function ($x) { return (float) $x; }, array_column($percent_result, 7))),
             'nof.features' => get_mean_and_sd(array_map(function ($x) { return (int) $x; }, array_column($percent_result, 8))),
             'time' => get_mean_and_sd(array_map(function ($x) { return (float) $x; }, array_column($percent_result, 9))),
+            'data' => array_column($percent_result, 6)
         ];
     }
 }
@@ -135,6 +138,7 @@ foreach ($problems_results as $problem_results) {
             'accuracy' => get_mean_and_sd(array_map(function ($x) { return (float) $x; }, array_column($config_results, 7))),
             'nof.features' => get_mean_and_sd(array_map(function ($x) { return (int) $x; }, array_column($config_results, 8))),
             'time' => get_mean_and_sd(array_map(function ($x) { return (float) $x; }, array_column($config_results, 9))),
+            'data' => array_column($config_results, 6)
         ];
         $results['random-search'][$baseline[0]][] = $metrics;
         if (
@@ -274,10 +278,28 @@ echo '\end{tabular*}' . PHP_EOL;
 echo '\end{table}' . PHP_EOL;
 file_put_contents(__DIR__ . '/../Feature-Selection-driven-by-DPSO-and-MAB-Article/table_grid_search_vs_mab.tex', ob_get_clean());
 
+$isBold = [];
+foreach (array_keys($datasets) as $dataset) {
+    $isBold[$dataset] = [];
+    foreach (array_keys($table_metrics) as $metric) {
+        $isBold[$dataset][$metric] = [
+            'best-grid-search-full' => 0,
+            'mab' => 0
+        ];
+    }
+}
+$isBold['soybean-large-preprocessed']['accuracy']['mab'] = 1;
+$isBold['soybean-large-preprocessed']['nof.features']['mab'] = 1;
+$isBold['anneal-preprocessed']['accuracy']['mab'] = 1;
+$isBold['arrhythmia-preprocessed']['cost']['mab'] = 1;
+$isBold['arrhythmia-preprocessed']['accuracy']['best-grid-search-full'] = 1;
+$isBold['arrhythmia-preprocessed']['nof.features']['mab'] = 1;
+$isBold['ad-preprocessed']['accuracy']['best-grid-search-full'] = 1;
+$isBold['ad-preprocessed']['nof.features']['mab'] = 1;
 ob_start();
 echo '\begin{table}[h]' . PHP_EOL;
-echo '\caption{...}' . PHP_EOL;
-echo '\label{tab:grid_search_vs_mab}' . PHP_EOL;
+echo '\caption{Performance table of the most-promising hyperparameter configuration of BPSO (BPSO*) found in the first part of the experiments and our proposed method (BPSO MAB). Averages and standard deviations of metrics are reported on each dataset for both algorithms.}' . PHP_EOL;
+echo '\label{tab:best_grid_search_vs_mab}' . PHP_EOL;
 echo '\scriptsize' . PHP_EOL;
 echo '\begin{tabular*}{\hsize}{@{\extracolsep{\fill}}llrrrrr@{}}' . PHP_EOL;
 echo '\toprule' . PHP_EOL;
@@ -309,8 +331,16 @@ foreach ($datasets as $dataset => $dataset_name) {
             $precision = 2;
         }
         echo ' & ' . $metric_name;
-        echo ' & $' . number_format($results['best-grid-search-full'][$dataset]['100%'][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['best-grid-search-full'][$dataset]['100%'][$metric][1], $precision, '.', '') . '$';
-        echo ' & $' . number_format($results['mab'][$dataset]['100%'][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['mab'][$dataset]['100%'][$metric][1], $precision, '.', '') . '$';
+        if ($isBold[$dataset][$metric]['best-grid-search-full']) {
+            echo ' & \boldmath{$' . number_format($results['best-grid-search-full'][$dataset]['100%'][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['best-grid-search-full'][$dataset]['100%'][$metric][1], $precision, '.', '') . '$}';
+        } else {
+            echo ' & $' . number_format($results['best-grid-search-full'][$dataset]['100%'][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['best-grid-search-full'][$dataset]['100%'][$metric][1], $precision, '.', '') . '$';
+        }
+        if ($isBold[$dataset][$metric]['mab']) {
+            echo ' & \boldmath{$' . number_format($results['mab'][$dataset]['100%'][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['mab'][$dataset]['100%'][$metric][1], $precision, '.', '') . '$}';
+        } else {
+            echo ' & $' . number_format($results['mab'][$dataset]['100%'][$metric][0], $precision, '.', '') . ' \pm ' . number_format($results['mab'][$dataset]['100%'][$metric][1], $precision, '.', '') . '$';
+        }
         echo '\\\\' . PHP_EOL;
         $first = false;
     }
@@ -348,6 +378,26 @@ foreach(array_keys($datasets) as $dataset) {
         echo '  - Cost: ' . print_mean_and_sd($results['best-grid-search-full'][$dataset][$percent]['cost']) . PHP_EOL;
         echo '  - Accuracy: ' . print_mean_and_sd($results['best-grid-search-full'][$dataset][$percent]['accuracy']) . PHP_EOL;
         echo '  - Nof. Features: ' . print_mean_and_sd($results['best-grid-search-full'][$dataset][$percent]['nof.features']) . PHP_EOL;
+    }
+}
+
+foreach(array_keys($datasets) as $dataset) {
+    echo $datasets[$dataset] . ' (' . $dataset . '):' . PHP_EOL;
+    echo '- Best from Grid Search (c1=' . $results['best-grid-search'][$dataset]['c1'] . ', c2=' . $results['best-grid-search'][$dataset]['c2'] . '):' . PHP_EOL;
+    foreach ($results['best-grid-search'][$dataset]['data'] as $val) {
+        echo $val . PHP_EOL;
+    }
+    echo '- Best from Random Search (c1=' . $results['best-random-search'][$dataset]['c1'] . ', c2=' . $results['best-random-search'][$dataset]['c2'] . '):' . PHP_EOL;
+    foreach ($results['best-random-search'][$dataset]['data'] as $val) {
+        echo $val . PHP_EOL;
+    }
+    echo '- Best from Grid Search Full:' . PHP_EOL;
+    foreach ($results['best-grid-search-full'][$dataset]['100%']['data'] as $val) {
+        echo $val . PHP_EOL;
+    }
+    echo '- MAB:' . PHP_EOL;
+    foreach ($results['mab'][$dataset]['100%']['data'] as $val) {
+        echo $val . PHP_EOL;
     }
 }
 
